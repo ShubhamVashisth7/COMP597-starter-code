@@ -54,8 +54,9 @@ class SimpleTrainer(base.Trainer):
                  lr_scheduler : optim.lr_scheduler.LRScheduler, 
                  device : torch.device, 
                  stats : stats.TrainerStats,
-                 conf: Optional[config.Config] = None):
-        super().__init__(model, loader, device, stats)
+                 conf: Optional[config.Config] = None,
+                 epochs: int = 1):
+        super().__init__(model, loader, device, stats, epochs=epochs)
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         # TODO remove conf as it is unused.

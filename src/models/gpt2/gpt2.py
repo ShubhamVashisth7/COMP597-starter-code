@@ -110,11 +110,11 @@ def simple_trainer(conf : config.Config, model : transformers.GPT2LMHeadModel, d
         "linear", 
         optimizer=optimizer,
         num_warmup_steps=0,
-        num_training_steps=len(loader), 
+        num_training_steps=conf.epochs * len(loader), 
     )
 
     # Return the SimpleTrainer with the initialized components
-    return trainer.SimpleTrainer(loader=loader, model=model, optimizer=optimizer, lr_scheduler=scheduler, device=model.device, stats=trainer_stats.init_from_conf(conf=conf, device=model.device, num_train_steps=len(loader))), None
+    return trainer.SimpleTrainer(loader=loader, model=model, optimizer=optimizer, lr_scheduler=scheduler, device=model.device, stats=trainer_stats.init_from_conf(conf=conf, device=model.device, num_train_steps=conf.epochs * len(loader)), epochs=conf.epochs), None
 
 ################################################################################
 ##################################    Init    ##################################
@@ -135,4 +135,3 @@ def gpt2_init(conf: config.Config, dataset: data.Dataset) -> Tuple[trainer.Train
         return simple_trainer(conf, model, dataset, tokenizer, data_collator)
     else:
         raise Exception(f"Unknown trainer type {conf.trainer}")
-

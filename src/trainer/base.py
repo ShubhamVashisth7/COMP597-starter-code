@@ -52,13 +52,17 @@ class Trainer(ABC):
                  device : torch.device, 
                  stats : stats.TrainerStats = stats.NOOPTrainerStats(), 
                  enable_checkpointing : bool = False,
-                 checkpoint_frequency : int = 1):
+                 checkpoint_frequency : int = 1,
+                 epochs : int = 1):
+        if epochs < 1:
+            raise ValueError("epochs must be at least 1")
         self.model = model
         self.loader = loader
         self.device = device
         self.stats = stats
         self.enable_checkpointing = enable_checkpointing
         self.checkpoint_frequency = checkpoint_frequency
+        self.epochs = epochs
 
     def should_save_checkpoint(self, i : int) -> bool:
         """Condition to device when to save a checkpoint.
@@ -247,35 +251,33 @@ class Trainer(ABC):
             Additional arguments that need to be provided to the model during 
             the forward pass.
 
-        Notes
-        -----
-            This does not support multi-epoch training. If you need training on 
-            multiple epochs, you should implement a class that inherits 
-            `Trainer` and overrides the `train` method.
-
         """
-        progress_bar = tqdm.auto.tqdm(range(len(self.loader)), desc="loss: N/A")
+        total_steps = self.epochs * len(self.loader)
+        progress_bar = tqdm.auto.tqdm(total=total_steps, desc="loss: N/A")
 
         self.stats.start_train()
-        for i, batch in enumerate(self.loader):
-            self.stats.start_step()
-            loss, descr = self.step(i, batch, model_kwargs)
-            self.stats.stop_step()
+        step = 0
+        for epoch in range(self.epochs):
+            for batch in self.loader:
+                self.stats.start_step()
+                loss, descr = self.step(step, batch, model_kwargs)
+                self.stats.stop_step()
 
-            if self.enable_checkpointing and self.should_save_checkpoint(i):
-                self.stats.start_save_checkpoint()
-                self.save_checkpoint(i)
-                self.stats.stop_save_checkpoint()
+                if self.enable_checkpointing and self.should_save_checkpoint(step):
+                    self.stats.start_save_checkpoint()
+                    self.save_checkpoint(step)
+                    self.stats.stop_save_checkpoint()
 
-            # for every rank, log the loss
-            self.stats.log_loss(loss)
-            self.stats.log_step()
+                # for every rank, log the loss
+                self.stats.log_loss(loss)
+                self.stats.log_step()
 
-            if descr is not None:
+                if descr is not None:
+                    progress_bar.clear()
+                    print(descr)
                 progress_bar.clear()
-                print(descr)
-            progress_bar.clear()
-            progress_bar.update(1)
+                progress_bar.update(1)
+                step += 1
 
         self.stats.stop_train()
         progress_bar.close()
