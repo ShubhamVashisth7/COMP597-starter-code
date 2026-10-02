@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=gpt2
 #SBATCH --account=def-kemme
-#SBATCH --gres=gpu:h100:1
+#SBATCH --gres=gpu:a100:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=128G
 #SBATCH --time=00:20:00
@@ -24,6 +24,9 @@ source "${REPO_DIR}/energy-env/bin/activate"
 export TMPDIR=/home/vashisth/scratch/tmp
 export PIP_CACHE_DIR=/home/vashisth/scratch/pip-cache
 export HF_HOME=/home/vashisth/scratch/huggingface
+export HF_HUB_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
 mkdir -p "${TMPDIR}" "${PIP_CACHE_DIR}" "${HF_HOME}"
 
 echo "Running on host: $(hostname)"
@@ -40,7 +43,7 @@ python "${REPO_DIR}/launch.py" \
   --batch_size 20 \
   --learning_rate 1e-6 \
   --data_configs.dataset.split "train[:10000]" \
-  --data_configs.dataset.name "allenai/c4" \
+  --data_configs.dataset.name "json" \
   --data_configs.dataset.train_files "${REPO_DIR}/data/c4-en.tfrecord-00000-of-01024.json.gz" \
   --trainer_stats codecarbon \
   --trainer_stats_configs.codecarbon.run_num 1 \
